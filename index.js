@@ -1,36 +1,11 @@
-'use strict';
+export { createFSDBClient, registerFSDBIpc } from './chunk-CBYLHY4N.js';
+import * as fs2 from 'fs';
+import { randomBytes, createHash } from 'crypto';
+import * as path2 from 'path';
+import { EventEmitter } from 'events';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
-var fs2 = require('fs');
-var crypto = require('crypto');
-var path2 = require('path');
-var events = require('events');
-
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
-      }
-    });
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-
-var fs2__namespace = /*#__PURE__*/_interopNamespace(fs2);
-var path2__namespace = /*#__PURE__*/_interopNamespace(path2);
-
-// src/index.ts
 function generateId() {
-  const bytes = crypto.randomBytes(16);
+  const bytes = randomBytes(16);
   return bytes.toString("hex").slice(0, 24);
 }
 function nowISO() {
@@ -89,7 +64,7 @@ function setNestedValue(obj, path3, value) {
 }
 function computeChecksum(data) {
   const serialized = typeof data === "string" ? data : JSON.stringify(data);
-  return crypto.createHash("sha256").update(serialized).digest("hex");
+  return createHash("sha256").update(serialized).digest("hex");
 }
 
 // src/query.ts
@@ -433,13 +408,13 @@ function exportToJSONString(schema, options) {
   return pretty ? JSON.stringify(bundle, null, 2) : JSON.stringify(bundle);
 }
 function exportToFileSync(schema, filePath, options) {
-  const resolvedPath = path2__namespace.resolve(process.cwd(), filePath);
-  const dir = path2__namespace.dirname(resolvedPath);
-  if (!fs2__namespace.existsSync(dir)) {
-    fs2__namespace.mkdirSync(dir, { recursive: true });
+  const resolvedPath = path2.resolve(process.cwd(), filePath);
+  const dir = path2.dirname(resolvedPath);
+  if (!fs2.existsSync(dir)) {
+    fs2.mkdirSync(dir, { recursive: true });
   }
   const json = exportToJSONString(schema, options);
-  fs2__namespace.writeFileSync(resolvedPath, json, "utf-8");
+  fs2.writeFileSync(resolvedPath, json, "utf-8");
 }
 function parseExportBundle(input) {
   let bundle;
@@ -572,11 +547,11 @@ function applyImport(schema, bundleInput, options) {
   };
 }
 function importFromFileSync(schema, filePath, options) {
-  const resolvedPath = path2__namespace.resolve(process.cwd(), filePath);
-  if (!fs2__namespace.existsSync(resolvedPath)) {
+  const resolvedPath = path2.resolve(process.cwd(), filePath);
+  if (!fs2.existsSync(resolvedPath)) {
     throw new Error(`[FSDB Sharing] Import file not found: ${resolvedPath}`);
   }
-  const raw = fs2__namespace.readFileSync(resolvedPath, "utf-8");
+  const raw = fs2.readFileSync(resolvedPath, "utf-8");
   return applyImport(schema, raw, options);
 }
 
@@ -937,7 +912,7 @@ var FSDBCollection = class {
   }
 };
 var DBEventEmitter = class {
-  _emitter = new events.EventEmitter();
+  _emitter = new EventEmitter();
   constructor() {
     this._emitter.setMaxListeners(100);
   }
@@ -1075,7 +1050,7 @@ var FileStorage = class {
     } else if (options) {
       opts = options;
     }
-    this.filePath = path2__namespace.resolve(process.cwd(), opts.filePath || "./fsdb.json");
+    this.filePath = path2.resolve(process.cwd(), opts.filePath || "./fsdb.json");
     this.pretty = opts.pretty ?? true;
     this.syncMode = opts.syncMode ?? "sync";
     this.debounceMs = opts.debounceMs ?? 0;
@@ -1087,9 +1062,9 @@ var FileStorage = class {
    * Ensures parent directory of the database file exists.
    */
   ensureDirectory() {
-    const dir = path2__namespace.dirname(this.filePath);
-    if (!fs2__namespace.existsSync(dir)) {
-      fs2__namespace.mkdirSync(dir, { recursive: true });
+    const dir = path2.dirname(this.filePath);
+    if (!fs2.existsSync(dir)) {
+      fs2.mkdirSync(dir, { recursive: true });
     }
   }
   /**
@@ -1110,13 +1085,13 @@ var FileStorage = class {
    */
   load() {
     this.ensureDirectory();
-    if (!fs2__namespace.existsSync(this.filePath)) {
+    if (!fs2.existsSync(this.filePath)) {
       const initialData = this.getDefaultSchema();
       this.writeSync(initialData);
       return initialData;
     }
     try {
-      const raw = fs2__namespace.readFileSync(this.filePath, "utf-8");
+      const raw = fs2.readFileSync(this.filePath, "utf-8");
       if (!raw.trim()) {
         const initialData = this.getDefaultSchema();
         this.writeSync(initialData);
@@ -1149,23 +1124,23 @@ var FileStorage = class {
     this.ensureDirectory();
     data.updatedAt = nowISO();
     const json = this.pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
-    const tempPath = `${this.filePath}.tmp.${Date.now()}.${crypto.randomBytes(4).toString("hex")}`;
+    const tempPath = `${this.filePath}.tmp.${Date.now()}.${randomBytes(4).toString("hex")}`;
     try {
-      fs2__namespace.writeFileSync(tempPath, json, "utf-8");
-      if (this.autoBackup && fs2__namespace.existsSync(this.filePath)) {
+      fs2.writeFileSync(tempPath, json, "utf-8");
+      if (this.autoBackup && fs2.existsSync(this.filePath)) {
         this.createBackupSync();
       }
       let retries = 5;
       while (retries > 0) {
         try {
-          fs2__namespace.renameSync(tempPath, this.filePath);
+          fs2.renameSync(tempPath, this.filePath);
           break;
         } catch (err) {
           retries--;
           if (retries === 0) {
-            fs2__namespace.copyFileSync(tempPath, this.filePath);
+            fs2.copyFileSync(tempPath, this.filePath);
             try {
-              fs2__namespace.unlinkSync(tempPath);
+              fs2.unlinkSync(tempPath);
             } catch (_) {
             }
             break;
@@ -1176,9 +1151,9 @@ var FileStorage = class {
         }
       }
     } finally {
-      if (fs2__namespace.existsSync(tempPath)) {
+      if (fs2.existsSync(tempPath)) {
         try {
-          fs2__namespace.unlinkSync(tempPath);
+          fs2.unlinkSync(tempPath);
         } catch (_) {
         }
       }
@@ -1218,13 +1193,13 @@ var FileStorage = class {
       this.ensureDirectory();
       data.updatedAt = nowISO();
       const json = this.pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
-      const tempPath = `${this.filePath}.tmp.${Date.now()}.${crypto.randomBytes(4).toString("hex")}`;
-      await fs2__namespace.promises.writeFile(tempPath, json, "utf-8");
+      const tempPath = `${this.filePath}.tmp.${Date.now()}.${randomBytes(4).toString("hex")}`;
+      await fs2.promises.writeFile(tempPath, json, "utf-8");
       try {
-        await fs2__namespace.promises.rename(tempPath, this.filePath);
+        await fs2.promises.rename(tempPath, this.filePath);
       } catch (renameErr) {
-        await fs2__namespace.promises.copyFile(tempPath, this.filePath);
-        await fs2__namespace.promises.unlink(tempPath).catch(() => {
+        await fs2.promises.copyFile(tempPath, this.filePath);
+        await fs2.promises.unlink(tempPath).catch(() => {
         });
       }
     } finally {
@@ -1239,24 +1214,24 @@ var FileStorage = class {
    * Creates a backup copy of the current database file.
    */
   createBackupSync() {
-    if (!fs2__namespace.existsSync(this.filePath)) return null;
+    if (!fs2.existsSync(this.filePath)) return null;
     const timestamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
     const backupPath = `${this.filePath}.bak.${timestamp}`;
-    fs2__namespace.copyFileSync(this.filePath, backupPath);
+    fs2.copyFileSync(this.filePath, backupPath);
     this.cleanOldBackups();
     return backupPath;
   }
   cleanOldBackups() {
     try {
-      const dir = path2__namespace.dirname(this.filePath);
-      const baseName = path2__namespace.basename(this.filePath);
-      const files = fs2__namespace.readdirSync(dir);
-      const backupFiles = files.filter((file) => file.startsWith(`${baseName}.bak.`)).map((file) => path2__namespace.join(dir, file)).sort((a, b) => fs2__namespace.statSync(b).mtimeMs - fs2__namespace.statSync(a).mtimeMs);
+      const dir = path2.dirname(this.filePath);
+      const baseName = path2.basename(this.filePath);
+      const files = fs2.readdirSync(dir);
+      const backupFiles = files.filter((file) => file.startsWith(`${baseName}.bak.`)).map((file) => path2.join(dir, file)).sort((a, b) => fs2.statSync(b).mtimeMs - fs2.statSync(a).mtimeMs);
       if (backupFiles.length > this.backupMaxCount) {
         const toDelete = backupFiles.slice(this.backupMaxCount);
         for (const file of toDelete) {
           try {
-            fs2__namespace.unlinkSync(file);
+            fs2.unlinkSync(file);
           } catch (_) {
           }
         }
@@ -1266,13 +1241,13 @@ var FileStorage = class {
   }
   tryRecoverFromBackup() {
     try {
-      const dir = path2__namespace.dirname(this.filePath);
-      const baseName = path2__namespace.basename(this.filePath);
-      const files = fs2__namespace.readdirSync(dir);
-      const backupFiles = files.filter((file) => file.startsWith(`${baseName}.bak.`)).map((file) => path2__namespace.join(dir, file)).sort((a, b) => fs2__namespace.statSync(b).mtimeMs - fs2__namespace.statSync(a).mtimeMs);
+      const dir = path2.dirname(this.filePath);
+      const baseName = path2.basename(this.filePath);
+      const files = fs2.readdirSync(dir);
+      const backupFiles = files.filter((file) => file.startsWith(`${baseName}.bak.`)).map((file) => path2.join(dir, file)).sort((a, b) => fs2.statSync(b).mtimeMs - fs2.statSync(a).mtimeMs);
       if (backupFiles.length > 0) {
         const latestBackup = backupFiles[0];
-        const raw = fs2__namespace.readFileSync(latestBackup, "utf-8");
+        const raw = fs2.readFileSync(latestBackup, "utf-8");
         const parsed = JSON.parse(raw);
         return this.validateAndNormalizeSchema(parsed);
       }
@@ -1315,92 +1290,6 @@ var TransactionSession = class {
   }
 };
 
-// src/electron.ts
-function registerFSDBIpc(ipcMain, db, channelPrefix = "fsdb") {
-  ipcMain.handle(`${channelPrefix}:kv:set`, async (_, key, value) => {
-    return db.set(key, value);
-  });
-  ipcMain.handle(`${channelPrefix}:kv:get`, async (_, key, defaultValue) => {
-    return db.get(key, defaultValue);
-  });
-  ipcMain.handle(`${channelPrefix}:kv:has`, async (_, key) => {
-    return db.has(key);
-  });
-  ipcMain.handle(`${channelPrefix}:kv:delete`, async (_, key) => {
-    return db.delete(key);
-  });
-  ipcMain.handle(`${channelPrefix}:kv:all`, async () => {
-    return db.kv.all();
-  });
-  ipcMain.handle(`${channelPrefix}:collection:insert`, async (_, collName, doc) => {
-    return db.collection(collName).insert(doc);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:insertMany`, async (_, collName, docs) => {
-    return db.collection(collName).insertMany(docs);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:find`, async (_, collName, query) => {
-    return db.collection(collName).find(query);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:findOne`, async (_, collName, query) => {
-    return db.collection(collName).findOne(query);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:findById`, async (_, collName, id) => {
-    return db.collection(collName).findById(id);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:update`, async (_, collName, query, updater) => {
-    return db.collection(collName).update(query, updater);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:delete`, async (_, collName, query) => {
-    return db.collection(collName).delete(query);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:deleteById`, async (_, collName, id) => {
-    return db.collection(collName).deleteById(id);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:count`, async (_, collName, query) => {
-    return db.collection(collName).count(query);
-  });
-  ipcMain.handle(`${channelPrefix}:collection:clear`, async (_, collName) => {
-    return db.collection(collName).clear();
-  });
-  ipcMain.handle(`${channelPrefix}:exportToFile`, async (_, filePath, options) => {
-    return db.exportToFile(filePath, options);
-  });
-  ipcMain.handle(`${channelPrefix}:importFromFile`, async (_, filePath, options) => {
-    return db.importFromFile(filePath, options);
-  });
-  ipcMain.handle(`${channelPrefix}:exportToJSON`, async (_, options) => {
-    return db.exportToJSON(options);
-  });
-  ipcMain.handle(`${channelPrefix}:importFromJSON`, async (_, jsonInput, options) => {
-    return db.importFromJSON(jsonInput, options);
-  });
-}
-function createFSDBClient(ipcRenderer, channelPrefix = "fsdb") {
-  return {
-    set: (key, value) => ipcRenderer.invoke(`${channelPrefix}:kv:set`, key, value),
-    get: (key, defaultValue) => ipcRenderer.invoke(`${channelPrefix}:kv:get`, key, defaultValue),
-    has: (key) => ipcRenderer.invoke(`${channelPrefix}:kv:has`, key),
-    delete: (key) => ipcRenderer.invoke(`${channelPrefix}:kv:delete`, key),
-    allKV: () => ipcRenderer.invoke(`${channelPrefix}:kv:all`),
-    collection: (name) => ({
-      insert: (doc) => ipcRenderer.invoke(`${channelPrefix}:collection:insert`, name, doc),
-      insertMany: (docs) => ipcRenderer.invoke(`${channelPrefix}:collection:insertMany`, name, docs),
-      find: (query) => ipcRenderer.invoke(`${channelPrefix}:collection:find`, name, query),
-      findOne: (query) => ipcRenderer.invoke(`${channelPrefix}:collection:findOne`, name, query),
-      findById: (id) => ipcRenderer.invoke(`${channelPrefix}:collection:findById`, name, id),
-      update: (query, updater) => ipcRenderer.invoke(`${channelPrefix}:collection:update`, name, query, updater),
-      delete: (query) => ipcRenderer.invoke(`${channelPrefix}:collection:delete`, name, query),
-      deleteById: (id) => ipcRenderer.invoke(`${channelPrefix}:collection:deleteById`, name, id),
-      count: (query) => ipcRenderer.invoke(`${channelPrefix}:collection:count`, name, query),
-      clear: () => ipcRenderer.invoke(`${channelPrefix}:collection:clear`, name)
-    }),
-    exportToFile: (filePath, options) => ipcRenderer.invoke(`${channelPrefix}:exportToFile`, filePath, options),
-    importFromFile: (filePath, options) => ipcRenderer.invoke(`${channelPrefix}:importFromFile`, filePath, options),
-    exportToJSON: (options) => ipcRenderer.invoke(`${channelPrefix}:exportToJSON`, options),
-    importFromJSON: (jsonInput, options) => ipcRenderer.invoke(`${channelPrefix}:importFromJSON`, jsonInput, options)
-  };
-}
-
 // src/index.ts
 var FSDB = class {
   _storage;
@@ -1441,8 +1330,8 @@ var FSDB = class {
    */
   get size() {
     try {
-      if (fs2__namespace.existsSync(this.filePath)) {
-        return fs2__namespace.statSync(this.filePath).size;
+      if (fs2.existsSync(this.filePath)) {
+        return fs2.statSync(this.filePath).size;
       }
     } catch (_) {
     }
@@ -1642,30 +1531,6 @@ var FSDB = class {
 };
 var index_default = FSDB;
 
-exports.DBEventEmitter = DBEventEmitter;
-exports.FSDB = FSDB;
-exports.FSDBCollection = FSDBCollection;
-exports.FSDBKV = FSDBKV;
-exports.FileStorage = FileStorage;
-exports.QueryBuilder = QueryBuilder;
-exports.TransactionSession = TransactionSession;
-exports.applyImport = applyImport;
-exports.computeChecksum = computeChecksum;
-exports.createExportBundle = createExportBundle;
-exports.createFSDBClient = createFSDBClient;
-exports.deepClone = deepClone;
-exports.default = index_default;
-exports.exportToFileSync = exportToFileSync;
-exports.exportToJSONString = exportToJSONString;
-exports.generateId = generateId;
-exports.getNestedValue = getNestedValue;
-exports.importFromFileSync = importFromFileSync;
-exports.matchDocument = matchDocument;
-exports.matchFieldValue = matchFieldValue;
-exports.nowISO = nowISO;
-exports.parseExportBundle = parseExportBundle;
-exports.registerFSDBIpc = registerFSDBIpc;
-exports.setNestedValue = setNestedValue;
-exports.sortDocuments = sortDocuments;
+export { DBEventEmitter, FSDB, FSDBCollection, FSDBKV, FileStorage, QueryBuilder, TransactionSession, applyImport, computeChecksum, createExportBundle, deepClone, index_default as default, exportToFileSync, exportToJSONString, generateId, getNestedValue, importFromFileSync, matchDocument, matchFieldValue, nowISO, parseExportBundle, setNestedValue, sortDocuments };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map
